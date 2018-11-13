@@ -21,10 +21,16 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func main() {
-	for _, dir := range os.Args[1:] {
+	var trees []string
+	args := os.Args[1:]
+	forest := make(map[string][]int)
+
+	for _, dir := range args {
 		file, err := os.Stat(dir)
 
 		if err != nil {
@@ -35,6 +41,32 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println(dir)
+		trees = append(trees, dir)
 	}
+
+	for i, tree := range trees {
+		filepath.Walk(tree, func(path string, info os.FileInfo, err error) error {
+			filename := info.Name()
+			localpath := strings.Replace(path, tree, "", 1)
+
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if info.IsDir() && string(filename[0]) == "." {
+				return filepath.SkipDir
+			}
+
+			_, exists := forest[localpath]
+			if !exists {
+				forest[localpath] = make([]int, len(args))
+			}
+			forest[localpath][i] = 1
+
+			return nil
+		})
+	}
+
+	fmt.Println(trees)
+	fmt.Println(forest)
 }

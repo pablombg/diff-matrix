@@ -19,7 +19,10 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,7 +31,7 @@ import (
 func main() {
 	var trees []string
 	args := os.Args[1:]
-	forest := make(map[string][]int)
+	forest := make(map[string][]string)
 
 	for _, dir := range args {
 		file, err := os.Stat(dir)
@@ -57,16 +60,40 @@ func main() {
 				return filepath.SkipDir
 			}
 
-			_, exists := forest[localpath]
-			if !exists {
-				forest[localpath] = make([]int, len(args))
+			if !info.IsDir() && string(filename[0]) != "." {
+				_, exists := forest[localpath]
+				if !exists {
+					forest[localpath] = make([]string, len(args))
+				}
+				forest[localpath][i] = sha256sum(path)
 			}
-			forest[localpath][i] = 1
 
 			return nil
 		})
 	}
 
 	fmt.Println(trees)
-	fmt.Println(forest)
+	scenicForest, err := json.MarshalIndent(forest, "", "  ")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Print(string(scenicForest))
+}
+
+func sha256sum(path string) string {
+	file, err := os.Open(path)
+	hash := sha256.New()
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(hash, file); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }

@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -73,6 +74,7 @@ func main() {
 	}
 
 	fmt.Println(trees)
+	computeVersions(forest)
 	scenicForest, err := json.MarshalIndent(forest, "", "  ")
 	if err != nil {
 		fmt.Println(err)
@@ -96,4 +98,23 @@ func sha256sum(path string) string {
 	}
 
 	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+func computeVersions(forest map[string][]string) {
+	for file, hashes := range forest {
+		// If the file doesn't exist in the tree
+		// its version is 0
+		versions := map[string]string{"": "0"}
+		output := make([]string, len(hashes))
+
+		for i, hash := range hashes {
+			_, exists := versions[hash]
+			if !exists {
+				versions[hash] = strconv.Itoa(len(versions))
+			}
+			output[i] = versions[hash]
+		}
+
+		forest[file] = output
+	}
 }

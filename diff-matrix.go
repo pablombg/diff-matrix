@@ -20,11 +20,11 @@ package main
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -75,11 +75,7 @@ func main() {
 
 	fmt.Println(trees)
 	computeVersions(forest)
-	scenicForest, err := json.MarshalIndent(forest, "", "  ")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Print(string(scenicForest))
+	fmt.Println(genMatrix(forest))
 }
 
 func sha256sum(path string) string {
@@ -117,4 +113,20 @@ func computeVersions(forest map[string][]string) {
 
 		forest[file] = output
 	}
+}
+
+func genMatrix(forest map[string][]string) [][]string {
+	// Convert forest into a 2d slice
+	matrix := make([][]string, 0, len(forest))
+	for name, versions := range forest {
+		row := append([]string{name}, versions...)
+		matrix = append(matrix, row)
+	}
+
+	// Sort rows by file path
+	sort.Slice(matrix, func(i, j int) bool {
+		return matrix[i][0] < matrix[j][0]
+	})
+
+	return matrix
 }
